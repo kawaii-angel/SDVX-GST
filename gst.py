@@ -190,29 +190,53 @@ def add_song(song, in_path, out_path, args):
         jacket = triple[1]
         diff = triple[2]
         if args.genre:
-            increment = 0
+            mp3_file = []
             for genre in genre_type:
+
                 if diff=='default':
                     diff_abb = ""
-                    mp3_file = f'{out_path}\\{genre_type[increment]}/{song_id.zfill(4)}. {sani_artist} - {sani_title}.mp3'
+                    mp3_file.append(f'{out_path}\\{genre}/{song_id.zfill(4)}. {sani_artist} - {sani_title}.mp3')
                 else:
                     diff_abb = diff_decode.get(diff)
                     if not diff_abb:
                         diff_abb = inf_decode.get(inf_ver)
 
-                    mp3_file = f'{out_path}\\{genre_type[increment]}/{song_id.zfill(4)} {diff_abb}. {sani_artist} - {sani_title}.mp3'
-
+                    mp3_file.append(f'{out_path}\\{genre}/{song_id.zfill(4)} {diff_abb}. {sani_artist} - {sani_title}.mp3')
                 if as_video:
                     main = ffmpeg.input(s3v_file)
                     cover = ffmpeg.input(jacket)
                     (
                         ffmpeg
-                        .output(main, cover, f'{out_path}\\{genre_type[increment]}/{sani_artist} - {sani_title}{diff_abb}.mp4', acodec='aac', vcodec='libx264', ab='256k', pix_fmt='yuv420p', loglevel=loglevel)
+                        .output(main, cover, f'{out_path}\\{genre}/{sani_artist} - {sani_title}{diff_abb}.mp4', acodec='aac', vcodec='libx264', ab='256k', pix_fmt='yuv420p', loglevel=loglevel)
                         .run(overwrite_output=True)
                     )
+                    continue
+
+                    
+
                 
-                    return
-                increment += 1
+                # For audio file, also adds metadata
+                for file in mp3_file:
+                    
+                        
+                    if not as_video:
+                        (
+                            ffmpeg
+                            .input(s3v_file)
+                            .output(file, loglevel=loglevel)
+                            .run(overwrite_output=True)
+                        )
+                        song_file = music_tag.load_file(file)
+                        song_file['title'] = f"{title} {diff_abb}"
+                        song_file['artist'] = artist
+                        song_file['tracknumber'] = song_id
+                        song_file['album'] = f'SOUND VOLTEX {version_decode.get(version)} GST'
+                        song_file['year'] = f'{release_date}'[:4]
+                        song_file['genre'] =  ", ".join(genre_type)
+                        with open(jacket, 'rb') as jk:
+                            song_file['artwork'] = jk.read()
+                        song_file.save()
+
                 
         else:
             if diff=='default':
@@ -234,25 +258,25 @@ def add_song(song, in_path, out_path, args):
                     .run(overwrite_output=True)
                 )
                 return
-        # For audio file, also adds metadata
-        (
-            ffmpeg
-            .input(s3v_file)
-            .output(mp3_file, loglevel=loglevel)
-            .run(overwrite_output=True)
-        )
+            # For audio file, also adds metadata
+            (
+                ffmpeg
+                .input(s3v_file)
+                .output(mp3_file, loglevel=loglevel)
+                .run(overwrite_output=True)
+            )
 
-        song_file = music_tag.load_file(mp3_file)
-        
-        song_file['title'] = f"{title} {diff_abb}"
-        song_file['artist'] = artist
-        song_file['tracknumber'] = song_id
-        song_file['album'] = f'SOUND VOLTEX {version_decode.get(version)} GST'
-        song_file['year'] = f'{release_date}'[:4]
-        song_file['genre'] =  ", ".join(genre_type)
-        with open(jacket, 'rb') as jk:
-            song_file['artwork'] = jk.read()
-        song_file.save()
+            song_file = music_tag.load_file(mp3_file)
+            
+            song_file['title'] = f"{title} {diff_abb}"
+            song_file['artist'] = artist
+            song_file['tracknumber'] = song_id
+            song_file['album'] = f'SOUND VOLTEX {version_decode.get(version)} GST'
+            song_file['year'] = f'{release_date}'[:4]
+            song_file['genre'] =  ", ".join(genre_type)
+            with open(jacket, 'rb') as jk:
+                song_file['artwork'] = jk.read()
+            song_file.save()
 if args.genre:
     for genre in Genres:
         try:os.mkdir(f'{out_path}\\{str(genre) [7:] }')
