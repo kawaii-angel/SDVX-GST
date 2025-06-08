@@ -125,7 +125,6 @@ def get_jk_song(song_id, folder_name):
                     open(f'{folder_name}/jk_{song_id.zfill(4)}_{diff}_b.png')
                     song_jackets.append([song, f'{folder_name}/jk_{song_id.zfill(4)}_{diff}_b.png', song[-5]])
                 except:
-                    print(f'{folder_name}/jk_{song_id.zfill(4)}_{diff}_b.png does not exist!')
                     song_jackets.append([song, jackets[-1], song[-5]])
             except ValueError: #throws only if s3v is not of the form ..._{int}{diff}.s3v. Use lowest diff jackets for songs with this issue.
                 song_jackets.append([song, jackets[0], 'default'])
