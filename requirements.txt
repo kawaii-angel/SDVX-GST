@@ -1,5 +1,7 @@
 ﻿ffmpeg-python==0.2.0
 joblib==1.4.2
 music-tag==0.4.3
+mutagen==1.47.0
+retrying==1.4.2
 pathvalidate==3.2.3
 tqdm==4.67.1

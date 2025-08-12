@@ -7,6 +7,8 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 from joblib import Parallel, delayed, wrap_non_picklable_objects
 from pathvalidate import sanitize_filename
+from mutagen.easyid3 import EasyID3
+from retrying import retry
 from tqdm import tqdm
 from enum import Enum
 
@@ -81,7 +83,8 @@ diff_decode = {
     'm': 'MXM',
     'n': 'NOV',
     'a': 'ADV',
-    'e': 'EXH'
+    'e': 'EXH',
+    'u': 'ULT'
 }
 
 inf_decode = {
@@ -104,6 +107,7 @@ class Genres(Enum):
     ORIGINAL = 32
     POP_ANIME = 64
     HINABITA = 128
+
 # Get the highest difficulty jacket and song available if only one option is available.
 def get_jk_song(song_id, folder_name):
     jk_pattern = f'{folder_name}/jk_{song_id.zfill(4)}_?_b.png'
@@ -126,11 +130,35 @@ def get_jk_song(song_id, folder_name):
                     song_jackets.append([song, f'{folder_name}/jk_{song_id.zfill(4)}_{diff}_b.png', song[-5]])
                 except:
                     song_jackets.append([song, jackets[-1], song[-5]])
-            except ValueError: #throws only if s3v is not of the form ..._{int}{diff}.s3v. Use lowest diff jackets for songs with this issue.
-                song_jackets.append([song, jackets[0], 'default'])
+            except ValueError: #throws only if s3v is not of the form ..._{int}{diff}.s3v. Use highest diff jackets for songs with this issue.
+                song_jackets.append([song, jackets[-1], 'default'])
     else:
         song_jackets.append([songs[0], jackets[-1], 'default'])
     return song_jackets
+
+# Sometimes the code will fail while saving metadata, so retry a few times
+@retry(stop_max_attempt_number=3, wait_fixed=1000)
+def add_meta(song, jacket, mp3_file):
+    (song_id, title, artist, filename, version, inf_ver, bpm, release_date, genre_type) = song
+    song_file = EasyID3(mp3_file)
+    song_file['title'] = title
+    song_file['artist'] = artist
+    song_file['albumartist'] = 'Various Artists'
+    song_file['tracknumber'] = song_id
+    song_file['genre'] =  ", ".join(genre_type)
+    song_file['bpm'] = str(bpm)
+    song_file.save()
+    song_file = music_tag.load_file(mp3_file)
+    with open(jacket, 'rb') as jk:
+        song_file['artwork'] = jk.read()
+    if target_version:
+        song_file['album'] = f'SOUND VOLTEX {version_decode.get(version)} GST'
+    else:
+        song_file['album'] = 'SOUND VOLTEX GST'
+        song_file['discnumber'] = version
+        song_file['totaldiscs'] = len(version_decode)
+        song_file['year'] = f'{release_date}'[:4]
+    song_file.save()
 
 def parse_mdb(musicdb):
     with open(musicdb, 'r', encoding='cp932') as mdb:
@@ -162,6 +190,8 @@ def parse_mdb(musicdb):
         filename = info.find('ascii').text
         inf_version = info.find('inf_ver').text # Get infinite version
         
+        bpm = int(info.find('bpm_max').text)//100
+
         genre_value = int(info.find('genre').text)  # Get genre value
         genre_type = []
         
@@ -172,12 +202,12 @@ def parse_mdb(musicdb):
         if genre_value == 0:
             genre_type.append('OTHER')
 
-        music.append((song_id, title, artist, filename, version, inf_version, release_date, genre_type))
+        music.append((song_id, title, artist, filename, version, inf_version, bpm, release_date, genre_type))
     return music
 
 @wrap_non_picklable_objects
 def add_song(song, in_path, out_path, args):
-    (song_id, title, artist, filename, version, inf_ver, release_date, genre_type) = song
+    (song_id, title, artist, filename, version, inf_ver, bpm, release_date, genre_type) = song
     sani_title = sanitize_filename(title)
     sani_artist = sanitize_filename(artist)
     folder_name = f'{in_path}/data/music/{song_id.zfill(4)}_{filename}'
@@ -218,24 +248,11 @@ def add_song(song, in_path, out_path, args):
                 .output(f'{out_path}/{out_string}.mp3', loglevel=loglevel)
                 .run(overwrite_output=True)
             )
-
             # Add metadata
-            song_file = music_tag.load_file(mp3_file)
-            song_file['title'] = f"{title} {diff_abb}"
-            song_file['artist'] = artist
-            song_file['albumartist'] = 'Various Artists'
-            song_file['tracknumber'] = song_id
-            if target_version:
-                song_file['album'] = f'SOUND VOLTEX {version_decode.get(version)} GST'
-            else:
-                song_file['album'] = 'SOUND VOLTEX GST'
-                song_file['discnumber'] = version
-                song_file['totaldiscs'] = len(version_decode)
-            song_file['year'] = f'{release_date}'[:4]
-            song_file['genre'] =  ", ".join(genre_type)
-            with open(jacket, 'rb') as jk:
-                song_file['artwork'] = jk.read()
-            song_file.save()
+            try:
+                add_meta(song, jacket, mp3_file)
+            except:
+                print(f'Something went wrong while saving the song metadata for {title}. Continuing...')
 
 if args.genre:
     for genre in Genres:
