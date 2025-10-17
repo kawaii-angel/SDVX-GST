@@ -1,6 +1,6 @@
 # SDVX GST Generator
 Script that takes contents path and creates tagged songs or videos in output folder.
-Requires ffmpeg to be installed and added to PATH.
+Requires ffmpeg to be installed and added to PATH. *You will get an error without ffmpeg!*
 ```
 python gst.py -i -o [-ver] [-d] [-b] [-g] [-yt] [-j] [-vb]
 ```
@@ -18,7 +18,7 @@ python gst.py -i -o [-ver] [-d] [-b] [-g] [-yt] [-j] [-vb]
 
 **-g: Genre folders** Seperates songs into folders depending on their in game genre, if a song has multiple genres, it will put it in both. (Defaults false)
 
-**-y: Video** Create GST as .mp4 video files instead of audio files. Automatically uses the song jacket as the video. (Defaults false)
+**-yt: Video** Create GST as .mp4 video files instead of audio files. Automatically uses the song jacket as the video. (Defaults false)
 
 **-vb: Verbose** Enables verbose ffmpeg output. (Defaults false)
 
