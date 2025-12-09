@@ -2,7 +2,7 @@
 Script that takes contents path and creates tagged songs or videos in output folder.
 Requires ffmpeg to be installed and added to PATH. *You will get an error without ffmpeg!*
 ```
-python gst.py -i -o [-ver] [-d] [-b] [-g] [-yt] [-j] [-vb]
+python gst.py -i -o [-ver] [-d] [-b] [-g] [-yt (noshorts)] [-j] [-vb]
 ```
 
 ## Arguments
@@ -18,8 +18,15 @@ python gst.py -i -o [-ver] [-d] [-b] [-g] [-yt] [-j] [-vb]
 
 **-g: Genre folders** Seperates songs into folders depending on their in game genre, if a song has multiple genres, it will put it in both. (Defaults false)
 
-**-yt: Video** Create GST as .mp4 video files instead of audio files. Automatically uses the song jacket as the video. (Defaults false)
+**-yt: Video** Create GST as .mp4 video files instead of audio files. Automatically uses the song jacket as the video. Add "noshorts" to put black bars on the sides of the video, preventing them from uploading as YT shorts. (Defaults false)
 
 **-vb: Verbose** Enables verbose ffmpeg output. (Defaults false)
 
 **-j: Jobs** Number of jobs. Dependent on CPU core count. (Speeds up GST generation, Defaults to 2)
+
+## Example usage:
+```
+python gst.py -i D:\KFC\contents -o D:\KFC\2024_soundtrack -d 20240101 -b 20241231 -g -yt noshorts
+```
+
+Will create the soundtrack from data in D:\KFC\contents in D:\KFC\2024_soundtrack, only including songs added in 2024, and sorted into genre folders. The songs will be saved as 16:9 videos.

@@ -19,7 +19,8 @@ parser.add_argument('-o output_folder', dest='output', help='Path to output fold
 parser.add_argument('-ver game_ver', '--version', dest='version', help='Generate GST for only one version. Leave blank to generate full GST.')
 parser.add_argument('-d', '--after', dest='after_date', type=int, help='Only add songs added after this date as YYYYMMDD.', default=None)
 parser.add_argument('-b', '--before', dest='before_date', type=int, help='Only add songs added before this date as YYYYMMDD.', default=None)
-parser.add_argument('-yt', '--youtube', dest='yt', action='store_true', help='Save GST as MP4 files for YouTube uploading.')
+parser.add_argument('-yt', '--youtube', dest='yt', type=str, help='Save GST as MP4 files for YouTube uploading. Add "noshorts" to force videos to 16:9.',
+                    nargs='?', const='', default=None)
 parser.add_argument('-vb', '--verbose', dest='verbose', action='store_true', help='Verbose ffmpeg output. \\Disables progress bar')
 parser.add_argument('-j jobs', dest='job', type=int, help='Number of jobs/threads active at once (cpu dependent). Defaults to 2.', default=2)
 parser.add_argument('-g', '--genre', dest='genre', action='store_true', help='Sorts songs into genre folders within output folder',)
@@ -233,12 +234,15 @@ def add_song(song, in_path, out_path, args):
         else:
             out_strings.append(song_string)
         for out_string in out_strings:
-            if as_video:
+            if as_video is not None:
                 main = ffmpeg.input(s3v_file)
                 cover = ffmpeg.input(jacket)
+                vf = 'null'
+                if as_video == 'noshorts' or as_video == 'noshort':
+                    vf = 'scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,setsar=1'
                 (
                     ffmpeg
-                    .output(main, cover, f'{out_path}/{out_string}.mp4', acodec='aac', vcodec='libx264', ab='256k', pix_fmt='yuv420p', loglevel=loglevel)
+                    .output(main, cover, f'{out_path}/{out_string}.mp4', acodec='aac', vcodec='libx264', vf=vf, ab='256k', pix_fmt='yuv420p', loglevel=loglevel)
                     .run(overwrite_output=True)
                 )
                 return
