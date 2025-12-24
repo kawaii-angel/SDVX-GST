@@ -69,7 +69,8 @@ accent_decode = {
     '鑒':'₩',
     '盥':'⚙︎',
     '瀑':'À',
-    '蔕':'ῦ'
+    '蔕':'ῦ',
+    '壥':'Є'
 }
 
 # Get version name from number, used for album title
@@ -79,7 +80,8 @@ version_decode = {
     '3':'GRAVITY WARS',
     '4':'HEAVENLY HAVEN',
     '5':'VIVID WAVE',
-    '6':'EXCEED GEAR'
+    '6':'EXCEED GEAR',
+    '7':'∇'
 }
 
 diff_decode = {
