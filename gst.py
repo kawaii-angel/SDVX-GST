@@ -54,6 +54,7 @@ accent_decode = {
     '齷':'é',
     '曩':'è',
     '䧺':'ê',
+    '罇':'ê',
     '骭':'ü',
     '隍':'Ü',
     '雋':'Ǜ',
@@ -70,7 +71,8 @@ accent_decode = {
     '盥':'⚙︎',
     '瀑':'À',
     '蔕':'ῦ',
-    '壥':'Є'
+    '壥':'Є',
+    '鷸':'♫',
 }
 
 # Get version name from number, used for album title
